@@ -20,22 +20,20 @@ python3 scripts/review_feedback.py list --pr <base-pr> --pr <next-pr> > /tmp/add
 
 It collects all review threads plus PR conversation comments and review summaries. Review threads are the only GitHub feedback items that can be resolved. Do not claim conversation comments or review summaries were resolved; offer to reply to them when the user requests it.
 
-4. Show counts per PR: unresolved/resolved/outdated review threads, conversation comments, and review summaries. Treat already-resolved threads as audit context, not new work, unless the user asks to reopen them.
+Linear diff reviews are a separate feedback surface. When a PR has a Linear review link or the user says they reviewed in Linear, use the Linear MCP `get_diff_threads` tool to inventory those threads too. GitHub review-thread resolution does not resolve Linear diff threads, and vice versa.
 
-## 2. Decide feedback interactively
+4. Show counts per PR and source: unresolved/resolved/outdated review threads, conversation comments, and review summaries. Treat already-resolved threads as audit context, not new work, unless the user asks to reopen them. Treat automated Linear linkbacks (`author: linear-code` with `<!-- linear-linkback -->`) as ignored audit metadata: include them in counts but do not present them for a decision, reply to them, or record individual ledger entries.
+5. Compare the actionable GitHub and Linear feedback for the same underlying concern. Group duplicate or materially overlapping comments—even when their wording, location, or proposed fix differs—into one concern, while retaining every source item and its ID/link in that concern. Do not group distinct concerns merely because they touch the same code.
 
-Go through every **unresolved** review thread, then each non-empty conversation comment and review summary, one item at a time. Include PR number, author, link, file/line and outdated status where available, the full comment text, and the relevant code/diff context.
+## 2. Discuss and decide feedback interactively
 
-For each item, recommend a disposition and wait for the user's decision. Record its type, PR number, stable GitHub node ID, link, disposition, rationale, and implementation/reply plan in the ledger before moving on:
+Discuss each actionable concern, rather than mechanically processing individual comments. For a grouped concern, show every linked GitHub and Linear item with its PR number, author, link, file/line and outdated status where available, plus the full comment text and relevant code/diff context. Make clear which comments are treated as the same concern and why.
 
-- `address` — specific implementation plan; review thread is eligible for resolution after the change is pushed.
-- `reply` — exact response or rationale; no code change and no thread resolution unless the user explicitly directs it.
-- `defer` — follow-up destination (issue/link/owner); do not resolve.
-- `decline` — rationale; do not resolve.
-- `already-addressed` — verify the implementation is on that PR's remote head; eligible for resolution only after user confirms.
-- `not-actionable` — duplicates, acknowledgements, or informational feedback; never silently resolve it.
+First understand what the reviewer needs. A comment may request a code change, raise a design question, seek an explanation, ask for investigation, or identify a symptom rather than the root cause. Analyze the underlying concern and the proposed fix. When useful, identify assumptions, risks, root causes, or alternatives the comment does not mention. Recommend a thoughtful path forward with its rationale and tradeoffs, then discuss it with the user until they choose an outcome. Do not force the discussion into a fixed menu of dispositions.
 
-Do not collapse related comments into one decision without showing every item and obtaining a decision for each. If a comment is unclear, investigate the code or ask a focused question rather than guessing. When all decisions are recorded, present a compact per-PR implementation plan and get confirmation before editing.
+Record each concern in the ledger, including its source items (type, PR number, stable GitHub node ID or Linear thread ID, and link), grouping rationale, the discussion and decision, rationale, and implementation/reply/follow-up plan. Use a precise outcome that fits the decision—for example, implement, reply with clarification, investigate, defer, decline, already addressed, not actionable, or resolve without change. These examples are not exhaustive.
+
+A grouped concern has one substantive decision and one coordinated plan, but every source item remains independently tracked for replies and resolution. Do not require duplicate decisions for comments in the same concern. A comment that is unclear should prompt focused investigation or a question, not a guess. When all concerns are decided, present a compact per-PR implementation plan and get confirmation before editing.
 
 ## 3. Implement on the owning PRs
 
@@ -43,23 +41,25 @@ Do not collapse related comments into one decision without showing every item an
 2. Implement only that PR's accepted decisions. A comment on an upper PR may change code introduced lower down, but the commit still belongs on the upper PR unless the user explicitly moves the decision.
 3. Read the repository's instructions before changing code. Run the relevant format, generation, and test commands. Commit a focused change on the owning branch, then push/update the stack with the repository's prescribed ship flow; otherwise use `gh stack submit` after the relevant checks.
 4. After lower-branch changes, restack all upper branches before continuing (`gh stack rebase --upstack --no-trunk` when appropriate). Never force-push, hard-reset, or lose uncommitted work.
-5. Verify each addressed thread's change is present in the owning PR's updated remote diff before marking it eligible. If tests fail or the intended change cannot be made, return that item to the user rather than resolving it.
+5. Verify each addressed thread's change is present in the owning PR's updated remote diff before marking it eligible. A `resolve-without-change` thread is eligible only when the user's explicit decision and rationale are recorded. If tests fail or the intended change cannot be made, return that item to the user rather than resolving it.
 
 ## 4. Return to tip and resolve verified threads
 
 1. Submit/push all changed PR branches and wait until `gh pr view <pr-number> --json headRefOid` shows their updated heads. Run `gh stack top` to return to the stack tip.
-2. Re-fetch feedback into a new file and match each `address` or confirmed `already-addressed` decision by review-thread ID. Resolve only IDs that are still unresolved and whose owning PR contains the verified implementation:
+2. Re-fetch feedback into a new file and match each `address`, confirmed `already-addressed`, or user-approved `resolve-without-change` decision by review-thread ID. Resolve only IDs that are still unresolved and either whose owning PR contains the verified implementation or whose no-change rationale is recorded:
 
 ```bash
 python3 scripts/review_feedback.py resolve <thread-id> [<thread-id> ...]
 ```
 
-3. Re-run the collector. Report, per PR: resolved thread IDs/links, intentionally left-open threads with their disposition, non-resolvable comments/reviews replied to (if any), changes made, and checks run.
+3. For a Linear diff thread that is eligible for resolution, use the Linear MCP `resolve_diff_thread` tool with its Linear thread ID. Verify it is resolved with `get_diff_threads`. Apply the same decision rules: resolve only verified implementation decisions or explicit user-approved `resolve-without-change` decisions.
+4. Re-run the GitHub collector and re-fetch applicable Linear diff threads. Report, per PR: resolved GitHub and Linear thread IDs/links, intentionally left-open threads with their disposition, non-resolvable comments/reviews replied to (if any), changes made, and checks run.
 
 ## Hard rules
 
 - Decisions precede edits; no implementation starts while feedback remains undecided.
 - Preserve PR ownership: changes and commits go to the branch whose PR received the feedback.
-- Resolve only review threads with verified implemented decisions. Never resolve a declined, deferred, reply-only, uncertain, or failed item.
+- Resolve only review threads with a verified implementation or an explicit user-approved `resolve-without-change` decision. Never resolve a declined, deferred, reply-only, uncertain, or failed item.
 - GitHub does not support resolving PR conversation comments or review summaries. State that plainly rather than treating a reply as resolution.
+- Linear diff-review threads require the Linear MCP `resolve_diff_thread` tool; a GitHub resolution does not close them.
 - Finish on the stack tip. Do not merge PRs.
