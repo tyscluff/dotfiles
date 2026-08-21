@@ -1,0 +1,6 @@
+{
+  "tui.altScreen.lineUp": "ctrl+y",
+  "tui.altScreen.lineDown": "ctrl+e",
+  "tui.editor.cursorLineEnd": ["end", "ctrl+end"],
+  "tui.editor.yank": "alt+y"
+}

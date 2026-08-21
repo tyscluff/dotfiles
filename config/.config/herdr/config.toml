@@ -1,0 +1,8 @@
+[theme]
+name = "terminal"
+auto_switch = false
+
+[keys]
+prefix = "ctrl+space"
+previous_workspace = "prefix+shift+k"
+next_workspace = "prefix+shift+j"

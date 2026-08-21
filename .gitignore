@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Never commit credentials, authentication, or generated runtime state.
+config/.config/gh/hosts.yml
+config/.config/herdr/session.json
+config/.config/herdr/*.log
+config/.config/herdr/*.sock
+config/.config/nvim/.claude/settings.local.json
+config/.config/nvim/**/*.local.*
+pi/.pi/agent/auth.json
+pi/.pi/agent/trust.json
+pi/.pi/agent/sessions/
+pi/.pi/agent/npm/
+pi/.pi/agent/git/
+pi/.pi/agent/*cache*.json
+pi/.pi/web-search-cache/

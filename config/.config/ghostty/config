@@ -1,0 +1,12 @@
+# Navigate Panes
+keybind = super+shift+h=goto_split:left
+keybind = super+shift+j=goto_split:bottom
+keybind = super+shift+k=goto_split:top
+keybind = super+shift+l=goto_split:right
+
+# Theme
+theme = Pro
+cursor-color = #378ADD
+
+# Unfocused split
+unfocused-split-opacity = 0.95
