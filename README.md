@@ -5,7 +5,7 @@ Public, version-controlled configuration for my development environment.
 ## Managed configuration
 
 - Neovim / LazyVim
-- GitHub CLI preferences (not authentication)
+- GitHub CLI preferences
 - Ghostty
 - HerdR theme and keybindings
 - Pi settings, keybindings, and shared skills
