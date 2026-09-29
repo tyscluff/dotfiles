@@ -35,6 +35,8 @@ Install the Pi packages declared in `pi/.pi/agent/settings.json`:
 ```sh
 pi install npm:pi-mcp-adapter
 pi install npm:pi-web-access
+pi install npm:@schultzp2020/pi-cursor
+pi install npm:@r3b1s/pi-vim-stash
 ```
 
 ## Updating configuration
